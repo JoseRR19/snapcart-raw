@@ -18,7 +18,6 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh """
-                eval \$(minikube docker-env)
                 docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
             """
             }
@@ -26,7 +25,6 @@ pipeline {
         stage('Test') {
             steps {
                 sh """
-                eval \$(minikube docker-env)
                 # Start a temporary container on port 3001
                 docker run -d --name snapcart-test -p 3001:3000 ${IMAGE_NAME}:${IMAGE_TAG}
                 
