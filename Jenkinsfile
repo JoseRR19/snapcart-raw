@@ -30,9 +30,13 @@ pipeline {
 
                 # Start a temporary container on port 3001
                 docker run -d --name snapcart-test -p 3001:3000 ${IMAGE_NAME}:${IMAGE_TAG}
+
+                # Get the internal Docker IP of the container
+                TARGET_IP=\$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' snapcart-test)
+                echo "Waiting for SnapCart to start at http://\$TARGET_IP:3000..."
                 
                 # Wait for Next.js to start
-                sleep 8
+                sleep 15
                 
                 # Check the health endpoint returns 200
                 STATUS=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/api/health)
