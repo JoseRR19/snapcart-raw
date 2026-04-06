@@ -48,9 +48,18 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 sh """
-                    kubectl apply -f ${K8S_DIR}/namespace.yaml
-                    kubectl apply -f ${K8S_DIR}/deployment.yaml
-                    kubectl apply -f ${K8S_DIR}/service.yaml
+                    # 1. Ensure kubectl is in the path (adjust if your bin is elsewhere)
+                    export PATH="\$PATH:\$(pwd)/bin"
+
+                    # 2. CRITICAL: Bypass proxy for the internal Docker bridge
+                    export no_proxy="localhost,127.0.0.1,host.docker.internal,192.168.49.2"
+                    export NO_PROXY="localhost,127.0.0.1,host.docker.internal,192.168.49.2"
+
+                    echo "Deploying SnapCart to Kubernetes..."
+                    # Using --validate=false prevents timeout issues while downloading schemas
+                    kubectl apply -f ${K8S_DIR}/namespace.yaml --validate=false
+                    kubectl apply -f ${K8S_DIR}/deployment.yaml --validate=false
+                    kubectl apply -f ${K8S_DIR}/service.yaml --validate=false
                     kubectl rollout status deployment/snapcart-deployment \
                         -n ${NAMESPACE} --timeout=120s
                 """
