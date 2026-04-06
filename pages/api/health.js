@@ -1,5 +1,5 @@
 export default function handler(req, res) {
-  res.status(500).json({
+  res.status(200).json({
     status: "ok",
     app: "snapcart",
     timestamp: new Date().toISOString(),
