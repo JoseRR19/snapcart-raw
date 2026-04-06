@@ -58,9 +58,16 @@ pipeline {
                     # 2. Point to the flattened config
                     export KUBECONFIG="/var/jenkins_home/.kube/config"
 
-                    # 3. CRITICAL: Bypass proxy for the internal Docker bridge
-                    export no_proxy="localhost,127.0.0.1,host.docker.internal,192.168.49.2"
-                    export NO_PROXY="localhost,127.0.0.1,host.docker.internal,192.168.49.2"
+                    # 2. Desactivar COMPLETAMENTE el proxy para la IP de Minikube
+                    # Añadimos la IP específica y el rango
+                    export no_proxy="localhost,127.0.0.1,192.168.49.2,192.168.49.0/24"
+                    export NO_PROXY="localhost,127.0.0.1,192.168.49.2,192.168.49.0/24"
+                    
+                    # 3. Limpiar variables de proxy si existen (por si acaso)
+                    unset http_proxy
+                    unset https_proxy
+                    unset HTTP_PROXY
+                    unset HTTPS_PROXY
 
                     echo "Deploying SnapCart to Kubernetes..."
                     # Using --validate=false prevents timeout issues while downloading schemas
