@@ -16,7 +16,7 @@ spec:
       containers:
       - name: snapcart
         image: snapcart:latest
-        imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000
         readinessProbe:

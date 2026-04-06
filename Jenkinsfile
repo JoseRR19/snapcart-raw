@@ -52,24 +52,30 @@ pipeline {
             """
             }
         }
-                    stage('Deploy to Kubernetes') {
+        stage('Deploy to Kubernetes') {
             steps {
-                sh """
-                    # 1. Ensure kubectl is in the path (adjust if your bin is elsewhere)
-                    export PATH="\$PATH:\$(pwd)/bin"
+                // Esto extrae el archivo de forma segura y lo pone en una ruta temporal
+                withCredentials([file(credentialsId: 'kubeconfig-file', variable: 'KUBECONFIG_TEMP')]) {
+                    sh """
+                        # 1. Copiamos el archivo seguro a la ruta que espera kubectl
+                        mkdir -p /var/jenkins_home/.kube
+                        cp \$KUBECONFIG_TEMP /var/jenkins_home/.kube/config
 
-                    # 2. CRITICAL: Bypass proxy for the internal Docker bridge
-                    export no_proxy="localhost,127.0.0.1,host.docker.internal,192.168.49.2"
-                    export NO_PROXY="localhost,127.0.0.1,host.docker.internal,192.168.49.2"
+                        # 2. Corregimos la IP para que apunte al host de Windows
+                        sed -i 's/192.168.49.2/host.docker.internal/g' /var/jenkins_home/.kube/config
+                        
+                        # 3. Quitamos las rutas de Windows que causan error
+                        # Este comando limpia las referencias a C:\\Users... para que no falle en Linux
+                        sed -i 's|C:\\\\Users\\\\josec\\\\.minikube|/var/jenkins_home/.minikube|g' /var/jenkins_home/.kube/config
 
-                    echo "Deploying SnapCart to Kubernetes..."
-                    # Using --validate=false prevents timeout issues while downloading schemas
-                    kubectl apply -f ${K8S_DIR}/namespace.yaml --validate=false
-                    kubectl apply -f ${K8S_DIR}/deployment.yaml --validate=false
-                    kubectl apply -f ${K8S_DIR}/service.yaml --validate=false
-                    kubectl rollout status deployment/snapcart-deployment \
-                        -n ${NAMESPACE} --timeout=120s
-                """
+                        export KUBECONFIG=/var/jenkins_home/.kube/config
+                        
+                        echo "Deploying to Minikube securely..."
+                        kubectl apply -f k8s/namespace.yaml --insecure-skip-tls-verify=true
+                        kubectl apply -f k8s/deployment.yaml --insecure-skip-tls-verify=true
+                        kubectl apply -f k8s/service.yaml --insecure-skip-tls-verify=true
+                    """
+                }
             }
         }
     }
