@@ -55,8 +55,9 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 sh """
-                    # 1. Ensure kubectl is in the path (adjust if your bin is elsewhere)
-                    export PATH="\$PATH:\$(pwd)/bin"
+                    # 1. Force kubectl to use the specific config file
+                    # If you haven't moved the file, try pointing to the absolute path
+                    export KUBECONFIG="/var/jenkins_home/.kube/config"
 
                     # 2. CRITICAL: Bypass proxy for the internal Docker bridge
                     export no_proxy="localhost,127.0.0.1,host.docker.internal,192.168.49.2"
