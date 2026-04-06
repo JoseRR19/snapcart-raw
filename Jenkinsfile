@@ -55,9 +55,6 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 sh """
-                    # 1. Ensure kubectl is in the path (adjust if your bin is elsewhere)
-                    export PATH="\$PATH:\$(pwd)/bin"
-
                     # 2. Point to the flattened config
                     export KUBECONFIG="/var/jenkins_home/.kube/config"
 
