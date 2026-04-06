@@ -39,7 +39,7 @@ pipeline {
                 sleep 15
                 
                 # Check the health endpoint returns 200
-                STATUS=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health)
+                STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://$TARGET_IP:3000/api/health)
                 
                 # Remove the test container
                 docker stop snapcart-test && docker rm snapcart-test
