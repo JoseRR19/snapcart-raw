@@ -25,6 +25,9 @@ pipeline {
         stage('Test') {
             steps {
                 sh """
+                # Clean up any old container from a previous failed run
+                docker rm -f snapcart-test || true
+
                 # Start a temporary container on port 3001
                 docker run -d --name snapcart-test -p 3001:3000 ${IMAGE_NAME}:${IMAGE_TAG}
                 
