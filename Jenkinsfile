@@ -71,7 +71,7 @@ pipeline {
                                 provider: minikube.sigs.k8s.io
                                 version: v1.38.0
                             name: cluster_info
-                            server: https://127.0.0.1:54163
+                            server: https://127.0.0.1:22241
                         name: minikube
                         contexts:
                         - context:
