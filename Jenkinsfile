@@ -59,21 +59,26 @@ pipeline {
                         mkdir -p /var/jenkins_home/.kube
                         cp \$KUBECONFIG_TEMP /var/jenkins_home/.kube/config
 
-                        # 1. Reemplaza CUALQUIER IP local por el puente hacia Windows
+                        # 1. Cambiamos la IP para apuntar al host de Windows
                         sed -i 's/127.0.0.1/host.docker.internal/g' /var/jenkins_home/.kube/config
-                        sed -i 's/192.168.49.2/host.docker.internal/g' /var/jenkins_home/.kube/config
                         
-                        # 2. Limpia las rutas de Windows (por si acaso)
-                        sed -i 's|C:\\\\Users\\\\josec\\\\.minikube|/var/jenkins_home/.minikube|g' /var/jenkins_home/.kube/config
+                        # 2. IMPORTANTE: Eliminamos las referencias a los archivos de certificados 
+                        # que causan el error de 'no such file or directory'
+                        sed -i '/client-certificate:/d' /var/jenkins_home/.kube/config
+                        sed -i '/client-key:/d' /var/jenkins_home/.kube/config
+                        sed -i '/certificate-authority:/d' /var/jenkins_home/.kube/config
 
                         export KUBECONFIG=/var/jenkins_home/.kube/config
                         
-                        echo "Deploying to Minikube via host.docker.internal..."
+                        echo "Deploying to Minikube..."
                         
-                        # Usamos --validate=false para evitar que intente descargar esquemas de red
+                        # Usamos --insecure-skip-tls-verify para que no pida los certificados que borramos arriba
                         kubectl apply -f k8s/namespace.yaml --insecure-skip-tls-verify=true --validate=false
                         kubectl apply -f k8s/deployment.yaml --insecure-skip-tls-verify=true --validate=false
                         kubectl apply -f k8s/service.yaml --insecure-skip-tls-verify=true --validate=false
+                        
+                        # Forzamos el reinicio para que veas tu nombre en el index.js
+                        kubectl rollout restart deployment/snapcart-deployment -n snapcart
                     """
                 }
             }
