@@ -52,30 +52,29 @@ pipeline {
             """
             }
         }
-        stage('Deploy to Kubernetes') {
+                stage('Deploy to Kubernetes') {
             steps {
                 sh """
-                    # 2. Point to the flattened config
+                    # 1. Usamos la configuración aplanada
                     export KUBECONFIG="/var/jenkins_home/.kube/config"
 
-                    # 2. Desactivar COMPLETAMENTE el proxy para la IP de Minikube
-                    # Añadimos la IP específica y el rango
-                    export no_proxy="localhost,127.0.0.1,192.168.49.2,192.168.49.0/24"
-                    export NO_PROXY="localhost,127.0.0.1,192.168.49.2,192.168.49.0/24"
-                    
-                    # 3. Limpiar variables de proxy si existen (por si acaso)
-                    unset http_proxy
-                    unset https_proxy
-                    unset HTTP_PROXY
-                    unset HTTPS_PROXY
+                    # 2. IMPORTANTE: Cambiamos la IP en el vuelo para que apunte al Host de Windows
+                    # Esto reemplaza la IP de Minikube por la dirección especial de Docker
+                    sed -i 's/192.168.49.2/host.docker.internal/g' /var/jenkins_home/.kube/config
+
+                    # 3. Bypass de proxies
+                    export no_proxy="localhost,127.0.0.1,host.docker.internal"
+                    export NO_PROXY="localhost,127.0.0.1,host.docker.internal"
+                    unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
 
                     echo "Deploying SnapCart to Kubernetes..."
-                    # Using --validate=false prevents timeout issues while downloading schemas
-                    kubectl apply -f ${K8S_DIR}/namespace.yaml --validate=false
-                    kubectl apply -f ${K8S_DIR}/deployment.yaml --validate=false
-                    kubectl apply -f ${K8S_DIR}/service.yaml --validate=false
-                    kubectl rollout status deployment/snapcart-deployment \
-                        -n ${NAMESPACE} --timeout=120s
+                    
+                    # 4. Forzamos a kubectl a usar el host.docker.internal
+                    kubectl --server=https://host.docker.internal:8443 apply -f ${K8S_DIR}/namespace.yaml --validate=false
+                    kubectl --server=https://host.docker.internal:8443 apply -f ${K8S_DIR}/deployment.yaml --validate=false
+                    kubectl --server=https://host.docker.internal:8443 apply -f ${K8S_DIR}/service.yaml --validate=false
+                    
+                    kubectl rollout status deployment/snapcart-deployment -n ${NAMESPACE} --timeout=120s
                 """
             }
         }
