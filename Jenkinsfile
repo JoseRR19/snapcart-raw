@@ -54,26 +54,26 @@ pipeline {
         }
         stage('Deploy to Kubernetes') {
             steps {
-                // Esto extrae el archivo de forma segura y lo pone en una ruta temporal
                 withCredentials([file(credentialsId: 'kubeconfig-file', variable: 'KUBECONFIG_TEMP')]) {
                     sh """
-                        # 1. Copiamos el archivo seguro a la ruta que espera kubectl
                         mkdir -p /var/jenkins_home/.kube
                         cp \$KUBECONFIG_TEMP /var/jenkins_home/.kube/config
 
-                        # 2. Corregimos la IP para que apunte al host de Windows
+                        # 1. Reemplaza CUALQUIER IP local por el puente hacia Windows
+                        sed -i 's/127.0.0.1/host.docker.internal/g' /var/jenkins_home/.kube/config
                         sed -i 's/192.168.49.2/host.docker.internal/g' /var/jenkins_home/.kube/config
                         
-                        # 3. Quitamos las rutas de Windows que causan error
-                        # Este comando limpia las referencias a C:\\Users... para que no falle en Linux
+                        # 2. Limpia las rutas de Windows (por si acaso)
                         sed -i 's|C:\\\\Users\\\\josec\\\\.minikube|/var/jenkins_home/.minikube|g' /var/jenkins_home/.kube/config
 
                         export KUBECONFIG=/var/jenkins_home/.kube/config
                         
-                        echo "Deploying to Minikube securely..."
-                        kubectl apply -f k8s/namespace.yaml --insecure-skip-tls-verify=true
-                        kubectl apply -f k8s/deployment.yaml --insecure-skip-tls-verify=true
-                        kubectl apply -f k8s/service.yaml --insecure-skip-tls-verify=true
+                        echo "Deploying to Minikube via host.docker.internal..."
+                        
+                        # Usamos --validate=false para evitar que intente descargar esquemas de red
+                        kubectl apply -f k8s/namespace.yaml --insecure-skip-tls-verify=true --validate=false
+                        kubectl apply -f k8s/deployment.yaml --insecure-skip-tls-verify=true --validate=false
+                        kubectl apply -f k8s/service.yaml --insecure-skip-tls-verify=true --validate=false
                     """
                 }
             }
